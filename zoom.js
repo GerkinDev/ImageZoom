@@ -1,7 +1,3 @@
-$(document).ready(function(){
-	zoomable = new ZoomableImage("#container > img", {maxZoom: 2});
-});
-
 var ZoomableImage = function(selector, options){
 	var self = this;
 	this.opts = $.extend({
