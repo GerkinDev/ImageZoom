@@ -36,7 +36,7 @@ var ZoomableImage = function(selector, options){
 	}, options);
 	var position = null;
 	if(this.opts.target && typeof this.opts.target == "object"){
-		if($ && (this.opts.target instanceof jQuery)){
+		if(jQuery && (this.opts.target instanceof jQuery)){
 			this.opts.target = this.opts.target[0];
 		} else if(!isElement(this.opts.target)){
 			var topt = this.opts.target;
