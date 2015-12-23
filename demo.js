@@ -17,8 +17,7 @@ $(document).ready(function(){
 				top: null,
 				bottom: null
 			},
-			deadarea: 0.25,
-			imageUrl: "Yolo"
+			deadarea: 0.25
 		})
 	}
 });

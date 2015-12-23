@@ -1,7 +1,33 @@
 var ZoomableImage = function(selector, options){
 	var self = this;
-	var original = $(selector);
-	this.opts = $.extend({
+
+	function attach(d,e,c){d.addEventListener?d.addEventListener(e,c):d.attachEvent(e,c);}
+	function detach(d,e,c){d.addEventListener?d.removeEventListener(e,c):d.detachEvent(e,c);}
+	function isElement(o){
+		return (
+			typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+			o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
+		);
+	}
+	function MergeRecursive(obj1, obj2) {
+		for (var p in obj2) {
+			try {
+				// Property in destination object set; update its value.
+				if ( obj2[p].constructor==Object ) {
+					obj1[p] = MergeRecursive(obj1[p], obj2[p]);
+				} else {
+					obj1[p] = obj2[p];
+				}
+			} catch(e) {
+				// Property in destination object not set; create it and set its value.
+				obj1[p] = obj2[p];
+			}
+		}
+		return obj1;
+	}
+
+	var original = document.querySelector(selector);
+	this.opts = MergeRecursive({
 		maxZoom: 2,
 		deadarea: 0.1,
 		appearDuration: 0.5,
@@ -9,21 +35,24 @@ var ZoomableImage = function(selector, options){
 		imageUrl: null
 	}, options);
 	var position = null;
-	if(this.opts.target && typeof this.opts.target == "object" && !(this.opts.target instanceof jQuery)){
-		var topt = this.opts.target;
-		if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
-			console.warn("Missing position attributes for Zoomable Image target");
-			this.opts.target = null;
-		} else {
-			position = topt;
-			this.opts.target = $($.parseHTML("<div class=\"zoomable\"></div>"));
-			original.parent().append(this.opts.target);
-			// inPlace set when test wrapper
+	if(this.opts.target && typeof this.opts.target == "object"){
+		if($ && (this.opts.target instanceof jQuery)){
+			this.opts.target = this.opts.target[0];
+		} else if(!isElement(this.opts.target)){
+			var topt = this.opts.target;
+			if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
+				console.warn("Missing position attributes for Zoomable Image target");
+				this.opts.target = null;
+			} else {
+				position = topt;
+				this.opts.target = document.createElement("div");
+				this.opts.target.classList.add("zoomable");
+				original.parentNode.appendChild(this.opts.target);
+				// inPlace set when test wrapper
+			}
 		}
 	}
 
-	//this.zoomedImage;
-	var original = $(selector);
 	var wrapper = this.opts.target;
 	var antiSubstractedProportions;
 	var substractedDims;
@@ -38,50 +67,55 @@ var ZoomableImage = function(selector, options){
 			get: function(){return proportion;}
 		}
 	});	
-	self.zoomedImage = original.clone().addClass("zoomed").removeAttr("id");
+	self.zoomedImage = original.cloneNode(true);
+	self.zoomedImage.classList.add("zoomed");
+	self.zoomedImage.removeAttribute("id");
 	if(self.opts.imageUrl != null){
-		self.zoomedImage.prop("src", self.opts.imageUrl);
+		self.zoomedImage.setAttribute("src", self.opts.imageUrl);
 	}
-	if(!wrapper){
-		wrapper = self.zoomedImage.wrap('<div class="zoomable zoomableInPlace"></div>').parent();
-		original.parent().append(wrapper);
+	if(wrapper == null){
+		wrapper = document.createElement("div");
+		wrapper.classList.add("zoomable");
+		wrapper.classList.add("zoomableInPlace");
+		wrapper.appendChild(self.zoomedImage);
+		original.parentNode.appendChild(wrapper);
 		inPlace = true;
 	} else {
-		wrapper.addClass("zoomable").append(self.zoomedImage);
+		wrapper.classList.add("zoomable");
+		wrapper.appendChild(self.zoomedImage);
 		inPlace = false;
 	}
-	self.zoomedImage.one("load", function(){
-		$(window).resize(self.recalcDimensions);
-		self.recalcDimensions();
+	self.zoomedImage.onload = function(){
+		// Single trigger
+		self.zoomedImage.onload = null;
+
 		var transitionString = "opacity " + self.opts.appearDuration + "s, top 0.1s, left 0.1s";	
-		self.zoomedImage.css({
-			WebkitTransition: transitionString,
-			MozTransition: transitionString,
-			transition: transitionString,
-		})
+		self.zoomedImage.style.webkitTransition = transitionString;
+		self.zoomedImage.style.mozTransition = transitionString;
+		self.zoomedImage.style.transition = transitionString;
+		window.onresize = self.recalcDimensions;
+		self.recalcDimensions();
 		self.enable();
-	});
+	}
 	this.enable = function(){
-		original
-			.bind("mousemove", recalcOffsets)
-			.bind("mouseenter", setActive)
-			.bind("mouseleave", setInactive);
+		attach(original,"mousemove", recalcOffsets);
+		attach(original,"mouseenter", setActive);
+		attach(original,"mouseleave", setInactive);
 	}
 	this.disable = function(){
-		original
-			.unbind("mousemove", recalcOffsets)
-			.unbind("mouseenter", setActive)
-			.unbind("mouseleave", setInactive);
+		detach(original,"mousemove", recalcOffsets);
+		detach(original,"mouseenter", setActive);
+		detach(original,"mouseleave", setInactive);
 	}
 	this.delete = function(){
 		wrapper.remove();
 	}
 	function active(active){active?setActive():setInactive();}
-	function setActive(){wrapper.addClass("active");}
-	function setInactive(){wrapper.removeClass("active");}
+	function setActive(){wrapper.classList.add("active");}
+	function setInactive(){wrapper.classList.remove("active");}
 
 	function recalcOffsets(e){
-		wrapper.addClass("active");
+		setActive();
 		var axisNames = ["x", "y"];
 		var offsets = {};
 		for(var i = 0; i < 2; i++){
@@ -96,59 +130,52 @@ var ZoomableImage = function(selector, options){
 				percentScroll = ((e[offsetName] - substractedDims[axis]) / scrollOn[axis]) * 100;
 			}
 			offsets[axis] = (percentScroll * proportionFactor[axis]) / 100;
-			//console.log("Scroll " + axis + ": " + percentScroll + "%");
 		}
-		self.zoomedImage.css({
-			top: -offsets.y,
-			left: -offsets.x,
-		});
+		self.zoomedImage.style.top	= -offsets.y + "px";
+		self.zoomedImage.style.left	= -offsets.x + "px";
 	}
 	this.recalcDimensions = function(){
-		wrapper.removeClass("active");
+		setInactive();
 		if(position != null){
 			var resOpts = {
 				height: position.height,
 				width: position.width,
-				top: original.position().top,
-				left: original.position().left
-			};
-			if(!!position.top)		resOpts.top		= original.position().top - (position.height + position.top);
-			if(!!position.bottom)	resOpts.top		= original.position().top + original.height() + position.bottom;
-			if(!!position.left)		resOpts.left	= original.position().left - (position.width + position.left);
-			if(!!position.right)	resOpts.left	= original.position().left + original.width() + position.right;
-			self.opts.target.css($.extend(resOpts, {
+				top: original.offsetTop,
+				left: original.offsetLeft,
 				position: "absolute"
-			}));
+			};
+			if(!!position.top)		resOpts.top		= original.offsetTop - (position.height + position.top);
+			if(!!position.bottom)	resOpts.top		= original.offsetTop + original.clientHeight + position.bottom;
+			if(!!position.left)		resOpts.left	= original.offsetLeft - (position.width + position.left);
+			if(!!position.right)	resOpts.left	= original.offsetLeft + original.clientWidth + position.right;
+			for(var k in resOpts)
+				self.opts.target.style[k] = resOpts[k];
 		}
 		dims = {
-			x: original.width(),
-			y: original.height()
+			x: original.clientWidth,
+			y: original.clientHeight
 		};
 		scrollOn = {
 			x: dims.x * (1 - (2 * self.opts.deadarea)),
 			y: dims.y * (1 - (2 * self.opts.deadarea))
 		};
 		if(inPlace){
-			wrapper.css({
-				top:	original.position().top,
-				left:	original.position().left,
-				width:	dims.x,
-				height:	dims.y
-			});
+			wrapper.style.top		= original.offsetTop + "px";
+			wrapper.style.left		= original.offsetLeft + "px";
+			wrapper.style.width 	= dims.x + "px";
+			wrapper.style.height	= dims.y + "px";
 		}
 		proportion = Math.min(
-			self.zoomedImage[0].naturalWidth / dims.x,
-			self.zoomedImage[0].naturalHeight / dims.y,
+			self.zoomedImage.naturalWidth / dims.x,
+			self.zoomedImage.naturalHeight / dims.y,
 			self.opts.maxZoom
 		);
 		offsetProportion = (proportion - 1);
-		self.zoomedImage.css({
-			width: dims.x * proportion,
-			height: dims.y * proportion
-		});
+		self.zoomedImage.style.width	= (dims.x * proportion) + "px";
+		self.zoomedImage.style.height	= (dims.y * proportion) + "px";
 		proportionFactor = {
-			x: dims.x * proportion - wrapper.width(),
-			y: dims.y * proportion - wrapper.height(),
+			x: dims.x * proportion - wrapper.clientWidth,
+			y: dims.y * proportion - wrapper.clientHeight,
 		};
 		substractedDims = {
 			x: self.opts.deadarea * dims.x,
