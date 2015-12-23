@@ -147,16 +147,16 @@ var ZoomableImage = function(selector, options){
 		setInactive();
 		if(position != null){
 			var opts = {
-				height: position.height,
-				width: position.width,
+				height: position.height + "px",
+				width: position.width + "px",
 				top: original.offsetTop,
 				left: original.offsetLeft,
 				position: "absolute"
 			};
-			if(!!position.top)		opts.top		= original.offsetTop - (position.height + position.top);
-			if(!!position.bottom)	opts.top		= original.offsetTop + original.clientHeight + position.bottom;
-			if(!!position.left)		opts.left	= original.offsetLeft - (position.width + position.left);
-			if(!!position.right)	opts.left	= original.offsetLeft + original.clientWidth + position.right;
+			if(!!position.top)		opts.top	= (original.offsetTop	- (position.height			+ position.top		)) + "px";
+			if(!!position.bottom)	opts.top	= (original.offsetTop	+ (original.clientHeight	+ position.bottom	)) + "px";
+			if(!!position.left)		opts.left	= (original.offsetLeft	- (position.width			+ position.left		)) + "px";
+			if(!!position.right)	opts.left	= (original.offsetLeft	+ (original.clientWidth		+ position.right	)) + "px";
 			for(var k in opts)
 				self.opts.target.style[k] = opts[k];
 		}
