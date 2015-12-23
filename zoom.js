@@ -15,7 +15,7 @@ var ZoomableImage = function(selector, options){
 			console.warn("Missing position attributes for Zoomable Image target");
 			this.opts.target = null;
 		} else {
-		position = topt;
+			position = topt;
 			this.opts.target = $($.parseHTML("<div class=\"zoomable\"></div>"));
 			original.parent().append(this.opts.target);
 			// inPlace set when test wrapper
@@ -38,8 +38,8 @@ var ZoomableImage = function(selector, options){
 			get: function(){return proportion;}
 		}
 	});	
-	original.load(function(){
-		self.zoomedImage = original.clone().addClass("zoomed");
+	self.zoomedImage = original.clone().addClass("zoomed").removeAttr("id");
+	self.zoomedImage.load(function(){
 		if(self.opts.imageUrl != null){
 			self.zoomedImage.prop("src", self.opts.imageUrl);
 		}
