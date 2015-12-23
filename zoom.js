@@ -5,7 +5,8 @@ var ZoomableImage = function(selector, options){
 		maxZoom: 2,
 		deadarea: 0.1,
 		appearDuration: 0.5,
-		target: null
+		target: null,
+		imageUrl: null
 	}, options);
 	var position = null;
 	if(this.opts.target && typeof this.opts.target == "object" && !(this.opts.target instanceof jQuery)){
@@ -39,6 +40,9 @@ var ZoomableImage = function(selector, options){
 	});	
 	original.load(function(){
 		self.zoomedImage = original.clone().addClass("zoomed");
+		if(self.opts.imageUrl != null){
+			self.zoomedImage.prop("src", self.opts.imageUrl);
+		}
 		if(!wrapper){
 			wrapper = self.zoomedImage.wrap('<div class="zoomable zoomableInPlace"></div>').parent();
 			original.parent().append(wrapper);
