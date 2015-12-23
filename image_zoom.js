@@ -102,8 +102,8 @@ var ZoomableImage = function(selector, options){
 		self.zoomedImage.style.webkitTransition = transitionString;
 		self.zoomedImage.style.mozTransition = transitionString;
 		self.zoomedImage.style.transition = transitionString;
-		attach(window,"resize",self.recalcDimensions);
-		self.recalcDimensions();
+		attach(window,"resize",self.recalculatePositions);
+		self.recalculatePositions();
 		self.enable();
 	}
 	this.enable = function(){
@@ -143,7 +143,7 @@ var ZoomableImage = function(selector, options){
 		self.zoomedImage.style.top	= -offsets.y + "px";
 		self.zoomedImage.style.left	= -offsets.x + "px";
 	}
-	this.recalcDimensions = function(){
+	this.recalculatePositions = function(){
 		setInactive();
 		if(position != null){
 			var opts = {
