@@ -7,28 +7,17 @@ var ZoomableImage = function(selector, options){
 		appearDuration: 0.5,
 		target: null
 	}, options);
+	var position = null;
 	if(this.opts.target && typeof this.opts.target == "object" && !(this.opts.target instanceof jQuery)){
 		var topt = this.opts.target;
 		if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
 			console.warn("Missing position attributes for Zoomable Image target");
 			this.opts.target = null;
 		} else {
-			var newDom = $($.parseHTML("<div class=\"zoomable\"></div>"));
-			var resOpts = {
-				height: topt.height,
-				width: topt.width,
-				top: original.position().top,
-				left: original.position().left
-			};
-			if(!!topt.top)		resOpts.top		= original.position().top - (topt.height + topt.top);
-			if(!!topt.bottom)	resOpts.top		= original.position().top + original.height() + topt.bottom;
-			if(!!topt.left)		resOpts.left	= original.position().left - (topt.width + topt.left);
-			if(!!topt.right)	resOpts.left	= original.position().left + original.width() + topt.right;
-			newDom.css($.extend(resOpts, {
-				position: "absolute"
-			}));
-			this.opts.target = newDom;
-			original.parent().append(newDom);
+		position = topt;
+			this.opts.target = $($.parseHTML("<div class=\"zoomable\"></div>"));
+			original.parent().append(this.opts.target);
+			// inPlace set when test wrapper
 		}
 	}
 
@@ -112,6 +101,21 @@ var ZoomableImage = function(selector, options){
 		});
 	}
 	this.recalcDimensions = function(){
+		if(position){
+			var resOpts = {
+				height: position.height,
+				width: position.width,
+				top: original.position().top,
+				left: original.position().left
+			};
+			if(!!position.top)		resOpts.top		= original.position().top - (position.height + position.top);
+			if(!!position.bottom)	resOpts.top		= original.position().top + original.height() + position.bottom;
+			if(!!position.left)		resOpts.left	= original.position().left - (position.width + position.left);
+			if(!!position.right)	resOpts.left	= original.position().left + original.width() + position.right;
+			this.opts.target.css($.extend(resOpts, {
+				position: "absolute"
+			}));
+		}
 		dims = {
 			x: original.width(),
 			y: original.height()
@@ -147,5 +151,11 @@ var ZoomableImage = function(selector, options){
 			y: self.opts.deadarea * dims.y
 		};
 		antiSubstractedProportions = offsetProportion / (1 - (self.opts.deadarea * 2));
+	}
+	this.delete = function(){
+		self.disable();
+		self.zoomedImage.remove();
+		if(!inPlace)
+			wrapper.remove();
 	}
 }
