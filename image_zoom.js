@@ -185,10 +185,10 @@ var ZoomableImage = function(selector, options){
 	}
 	this.delete = function(){
 		self.disable();
-		self.zoomedImage.remove();
-		if(wrapper.hasClass("active"))
-			wrapper.removeClass("active") && setTimeout(function(){wrapper.remove();}, self.opts.appearDuration * 100);
+		self.zoomedImage.parentNode.removeChild(self.zoomedImage);
+		if(wrapper.classList.contains("active"))
+			wrapper.classList.remove("active") && setTimeout(function(){wrapper.parentNode.removeChild(wrapper);}, self.opts.appearDuration * 100);
 		else
-			wrapper.remove();
+			wrapper.parentNode.removeChild(wrapper);
 	}
 }
