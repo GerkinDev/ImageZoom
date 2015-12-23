@@ -102,7 +102,7 @@ var ZoomableImage = function(selector, options){
 		self.zoomedImage.style.webkitTransition = transitionString;
 		self.zoomedImage.style.mozTransition = transitionString;
 		self.zoomedImage.style.transition = transitionString;
-		window.onresize = self.recalcDimensions;
+		attach(window,"resize",self.recalcDimensions);
 		self.recalcDimensions();
 		self.enable();
 	}
