@@ -39,19 +39,18 @@ var ZoomableImage = function(selector, options){
 		}
 	});	
 	self.zoomedImage = original.clone().addClass("zoomed").removeAttr("id");
-	self.zoomedImage.load(function(){
-		if(self.opts.imageUrl != null){
-			self.zoomedImage.prop("src", self.opts.imageUrl);
-		}
-		if(!wrapper){
-			wrapper = self.zoomedImage.wrap('<div class="zoomable zoomableInPlace"></div>').parent();
-			original.parent().append(wrapper);
-			inPlace = true;
-		} else {
-			wrapper.addClass("zoomable").append(self.zoomedImage);
-			inPlace = false;
-		}
-
+	if(self.opts.imageUrl != null){
+		self.zoomedImage.prop("src", self.opts.imageUrl);
+	}
+	if(!wrapper){
+		wrapper = self.zoomedImage.wrap('<div class="zoomable zoomableInPlace"></div>').parent();
+		original.parent().append(wrapper);
+		inPlace = true;
+	} else {
+		wrapper.addClass("zoomable").append(self.zoomedImage);
+		inPlace = false;
+	}
+	self.zoomedImage.one("load", function(){
 		$(window).resize(self.recalcDimensions);
 		self.recalcDimensions();
 		var transitionString = "opacity " + self.opts.appearDuration + "s, top 0.1s, left 0.1s";	
@@ -105,7 +104,8 @@ var ZoomableImage = function(selector, options){
 		});
 	}
 	this.recalcDimensions = function(){
-		if(position){
+		wrapper.removeClass("active");
+		if(position != null){
 			var resOpts = {
 				height: position.height,
 				width: position.width,
@@ -116,7 +116,7 @@ var ZoomableImage = function(selector, options){
 			if(!!position.bottom)	resOpts.top		= original.position().top + original.height() + position.bottom;
 			if(!!position.left)		resOpts.left	= original.position().left - (position.width + position.left);
 			if(!!position.right)	resOpts.left	= original.position().left + original.width() + position.right;
-			this.opts.target.css($.extend(resOpts, {
+			self.opts.target.css($.extend(resOpts, {
 				position: "absolute"
 			}));
 		}
@@ -159,7 +159,9 @@ var ZoomableImage = function(selector, options){
 	this.delete = function(){
 		self.disable();
 		self.zoomedImage.remove();
-		if(!inPlace)
+		if(wrapper.hasClass("active"))
+			wrapper.removeClass("active") && setTimeout(function(){wrapper.remove();}, self.opts.appearDuration * 100);
+		else
 			wrapper.remove();
 	}
 }
