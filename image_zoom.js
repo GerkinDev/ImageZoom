@@ -147,10 +147,10 @@ var ZoomableImage = function(selector, options){
 		setInactive();
 		if(position != null){
 			var opts = {
-				height: position.height + "px",
-				width: position.width + "px",
-				top: original.offsetTop,
-				left: original.offsetLeft,
+				height: position.height		+ "px",
+				width: position.width		+ "px",
+				top: original.offsetTop		+ "px",
+				left: original.offsetLeft	+ "px",
 				position: "absolute"
 			};
 			if(!!position.top)		opts.top	= (original.offsetTop	- (position.height			+ position.top		)) + "px";
