@@ -26,13 +26,19 @@ var ZoomableImage = function(selector, options){
 		return obj1;
 	}
 
-	var original = document.querySelector(selector);
+	var original;
+	if(jQuery && (selector instanceof jQuery)){
+		original = selector[0];
+	} else {
+		original = document.querySelector(selector);
+	}
 	this.opts = MergeRecursive({
 		maxZoom: 2,
 		deadarea: 0.1,
 		appearDuration: 0.5,
 		target: null,
-		imageUrl: null
+		imageUrl: null,
+		backgroundImageColor: null
 	}, options);
 	var position = null;
 	if(this.opts.target && typeof this.opts.target == "object"){
@@ -70,9 +76,11 @@ var ZoomableImage = function(selector, options){
 	self.zoomedImage = original.cloneNode(true);
 	self.zoomedImage.classList.add("zoomed");
 	self.zoomedImage.removeAttribute("id");
-	if(self.opts.imageUrl != null){
-		self.zoomedImage.setAttribute("src", self.opts.imageUrl);
-	}
+	self.zoomedImage.removeAttribute("style");
+
+	if(self.opts.imageUrl != null) self.zoomedImage.setAttribute("src", self.opts.imageUrl);
+	if(self.opts.backgroundImageColor != null) self.zoomedImage.style.background = self.opts.backgroundImageColor;
+
 	if(wrapper == null){
 		wrapper = document.createElement("div");
 		wrapper.classList.add("zoomable");

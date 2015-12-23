@@ -8,15 +8,19 @@
 }
 .zoomable > .zoomed{
 	transition: opacity 0.5s;
-	opacity: 0;
-	position: absolute;
-	top:0;
-	left: 0;
-	pointer-events: none;
+	opacity: 0!important;
+	position: absolute!important;
+	top:auto;
+	left: auto;
+	right: auto;
+	bottom: auto;
+	margin: 0!important;
+	pointer-events: none!important;
 	max-height: none!important;
 	max-width: none!important;
+	background: #fff!important;
 }
 .zoomable.active > .zoomed{
-	opacity: 1;
+	opacity: 1!important;
 	transition: opacity 0.5s;
 }
