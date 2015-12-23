@@ -32,34 +32,7 @@ var ZoomableImage = function(selector, options){
 	} else {
 		original = document.querySelector(selector);
 	}
-	this.opts = MergeRecursive({
-		maxZoom: 2,
-		deadarea: 0.1,
-		appearDuration: 0.5,
-		target: null,
-		imageUrl: null,
-		backgroundImageColor: null
-	}, options);
-	var position = null;
-	if(this.opts.target && typeof this.opts.target == "object"){
-		if(jQuery && (this.opts.target instanceof jQuery)){
-			this.opts.target = this.opts.target[0];
-		} else if(!isElement(this.opts.target)){
-			var topt = this.opts.target;
-			if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
-				console.warn("Missing position attributes for Zoomable Image target");
-				this.opts.target = null;
-			} else {
-				position = topt;
-				this.opts.target = document.createElement("div");
-				this.opts.target.classList.add("zoomable");
-				original.parentNode.appendChild(this.opts.target);
-				// inPlace set when test wrapper
-			}
-		}
-	}
-
-	var wrapper = this.opts.target;
+	var wrapper;
 	var antiSubstractedProportions;
 	var substractedDims;
 	var offsetProportion;
@@ -68,11 +41,39 @@ var ZoomableImage = function(selector, options){
 	var inPlace;
 	var proportionFactor;
 	var scrollOn;
+	var position = null;
 	Object.defineProperties(this, {
 		proportion: {
 			get: function(){return proportion;}
 		}
 	});	
+	self.opts = MergeRecursive({
+		maxZoom: 2,
+		deadarea: 0.1,
+		appearDuration: 0.5,
+		target: null,
+		imageUrl: null,
+		backgroundImageColor: null
+	}, options);
+	if(self.opts.target && typeof self.opts.target == "object"){
+		if(jQuery && (self.opts.target instanceof jQuery)){
+			self.opts.target = self.opts.target[0];
+		} else if(!isElement(self.opts.target)){
+			var topt = self.opts.target;
+			if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
+				console.warn("Missing position attributes for Zoomable Image target: ", topt);
+				self.opts.target = null;
+			} else {
+				position = topt;
+				self.opts.target = document.createElement("div");
+				self.opts.target.classList.add("zoomable");
+				original.parentNode.appendChild(self.opts.target);
+				// inPlace set when test wrapper
+			}
+		}
+	}
+
+	wrapper = self.opts.target;
 	self.zoomedImage = original.cloneNode(true);
 	self.zoomedImage.classList.add("zoomed");
 	self.zoomedImage.removeAttribute("id");
@@ -145,19 +146,19 @@ var ZoomableImage = function(selector, options){
 	this.recalcDimensions = function(){
 		setInactive();
 		if(position != null){
-			var resOpts = {
+			var opts = {
 				height: position.height,
 				width: position.width,
 				top: original.offsetTop,
 				left: original.offsetLeft,
 				position: "absolute"
 			};
-			if(!!position.top)		resOpts.top		= original.offsetTop - (position.height + position.top);
-			if(!!position.bottom)	resOpts.top		= original.offsetTop + original.clientHeight + position.bottom;
-			if(!!position.left)		resOpts.left	= original.offsetLeft - (position.width + position.left);
-			if(!!position.right)	resOpts.left	= original.offsetLeft + original.clientWidth + position.right;
-			for(var k in resOpts)
-				self.opts.target.style[k] = resOpts[k];
+			if(!!position.top)		opts.top		= original.offsetTop - (position.height + position.top);
+			if(!!position.bottom)	opts.top		= original.offsetTop + original.clientHeight + position.bottom;
+			if(!!position.left)		opts.left	= original.offsetLeft - (position.width + position.left);
+			if(!!position.right)	opts.left	= original.offsetLeft + original.clientWidth + position.right;
+			for(var k in opts)
+				self.opts.target.style[k] = opts[k];
 		}
 		dims = {
 			x: original.clientWidth,
