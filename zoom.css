@@ -1,4 +1,9 @@
 .zoomable{
+	position: relative;
+	overflow: hidden;
+	pointer-events: none;
+}
+.zoomableInPlace{
 	position: absolute;
 }
 .zoomable > .zoomed{
