@@ -29,7 +29,7 @@ var ZoomableImage = function(selector, options){
 	var original;
 	if(jQuery && (selector instanceof jQuery)){
 		original = selector[0];
-	} else {
+	} else if(typeof selector == "string"){
 		original = document.querySelector(selector);
 	}
 	var wrapper;
@@ -42,6 +42,7 @@ var ZoomableImage = function(selector, options){
 	var proportionFactor;
 	var scrollOn;
 	var position = null;
+	var baseDims;
 	Object.defineProperties(this, {
 		proportion: {
 			get: function(){return proportion;}
@@ -53,7 +54,8 @@ var ZoomableImage = function(selector, options){
 		appearDuration: 0.5,
 		target: null,
 		imageUrl: null,
-		backgroundImageColor: null
+		backgroundImageColor: null,
+		forceNaturalProportions: true
 	}, options);
 	if(self.opts.target && typeof self.opts.target == "object"){
 		if(jQuery && (self.opts.target instanceof jQuery)){
@@ -94,18 +96,27 @@ var ZoomableImage = function(selector, options){
 		wrapper.appendChild(self.zoomedImage);
 		inPlace = false;
 	}
-	self.zoomedImage.onload = function(){
-		// Single trigger
+
+	function initLoaded(){
 		self.zoomedImage.onload = null;
+		clearInterval(intervalTestLoaded);
 
 		var transitionString = "opacity " + self.opts.appearDuration + "s, top 0.1s, left 0.1s";	
 		self.zoomedImage.style.webkitTransition = transitionString;
 		self.zoomedImage.style.mozTransition = transitionString;
 		self.zoomedImage.style.transition = transitionString;
 		attach(window,"resize",self.recalculatePositions);
-		self.recalculatePositions();
-		self.enable();
+		if(self.recalculatePositions())
+			self.enable();
 	}
+	self.zoomedImage.onload = initLoaded;
+	var intervalTestLoaded = setInterval(function(){
+		if(self.zoomedImage.complete){
+			clearInterval(intervalTestLoaded);
+			initLoaded();
+		}
+	}, 50);
+
 	this.enable = function(){
 		attach(original,"mousemove", recalcOffsets);
 		attach(original,"mouseenter", setActive);
@@ -131,9 +142,9 @@ var ZoomableImage = function(selector, options){
 			var axis = axisNames[i];
 			var offsetName = "offset" + axis.toUpperCase();
 			var percentScroll;
-			if(e[offsetName] < self.opts.deadarea * dims[axis]){
+			if(e[offsetName] < self.opts.deadarea * baseDims[axis]){
 				percentScroll = 0;
-			} else if(e[offsetName] > (1 - self.opts.deadarea) * dims[axis]){
+			} else if(e[offsetName] > (1 - self.opts.deadarea) * baseDims[axis]){
 				percentScroll = 100;
 			} else {
 				percentScroll = ((e[offsetName] - substractedDims[axis]) / scrollOn[axis]) * 100;
@@ -174,23 +185,48 @@ var ZoomableImage = function(selector, options){
 			wrapper.style.width 	= dims.x + "px";
 			wrapper.style.height	= dims.y + "px";
 		}
+		var proportions = {
+			x: self.zoomedImage.naturalWidth / dims.x,
+			y: self.zoomedImage.naturalHeight / dims.y
+		}
+
+		if(proportions.x < 1 || proportions.y < 1){
+			console.log("Zoom on stretched image", self.zoomedImage);
+			self.disable();
+			return false;
+		}
+
+		var minProportions = Math.min(proportions.x, proportions.y);
 		proportion = Math.min(
-			self.zoomedImage.naturalWidth / dims.x,
-			self.zoomedImage.naturalHeight / dims.y,
+			minProportions,
 			self.opts.maxZoom
 		);
 		offsetProportion = (proportion - 1);
-		self.zoomedImage.style.width	= (dims.x * proportion) + "px";
-		self.zoomedImage.style.height	= (dims.y * proportion) + "px";
+
+		if(self.opts.forceNaturalProportions){
+			baseDims = {
+				x: (self.zoomedImage.naturalWidth / minProportions),
+				y: (self.zoomedImage.naturalHeight / minProportions)
+			}
+		} else {
+			baseDims = {
+				x: dims.x,
+				y: dims.y
+			}
+		}
+
+		self.zoomedImage.style.width	= (baseDims.x * proportion) + "px";
+		self.zoomedImage.style.height	= (baseDims.y * proportion) + "px";
 		proportionFactor = {
-			x: dims.x * proportion - wrapper.clientWidth,
-			y: dims.y * proportion - wrapper.clientHeight,
+			x: baseDims.x * proportion - wrapper.clientWidth,
+			y: baseDims.y * proportion - wrapper.clientHeight,
 		};
 		substractedDims = {
-			x: self.opts.deadarea * dims.x,
-			y: self.opts.deadarea * dims.y
+			x: self.opts.deadarea * baseDims.x,
+			y: self.opts.deadarea * baseDims.y
 		};
 		antiSubstractedProportions = offsetProportion / (1 - (self.opts.deadarea * 2));
+		return true;
 	}
 	this.delete = function(){
 		self.disable();
