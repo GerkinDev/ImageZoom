@@ -1,4 +1,4 @@
-var ZoomableImage = function(selector, options){
+var ImageZoom = function(selector, options){
 	var self = this;
 
 	function attach(d,e,c){d.addEventListener?d.addEventListener(e,c):d.attachEvent(e,c);}
@@ -29,7 +29,7 @@ var ZoomableImage = function(selector, options){
 	var original;
 	if(jQuery && (selector instanceof jQuery)){
 		original = selector[0];
-	} else if(typeof selector == "string"){
+	} else if(typeof selector === "string" || selector instanceof String){
 		original = document.querySelector(selector);
 	}
 	var wrapper;
@@ -62,7 +62,13 @@ var ZoomableImage = function(selector, options){
 			self.opts.target = self.opts.target[0];
 		} else if(!isElement(self.opts.target)){
 			var topt = self.opts.target;
-			if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
+			if(!topt.width){
+				topt.width = original.width;
+			}
+			if(!topt.height){
+				topt.height = original.height;
+			}
+			if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
 				console.warn("Missing position attributes for Zoomable Image target: ", topt);
 				self.opts.target = null;
 			} else {
@@ -78,10 +84,18 @@ var ZoomableImage = function(selector, options){
 	wrapper = self.opts.target;
 	self.zoomedImage = original.cloneNode(true);
 	self.zoomedImage.classList.add("zoomed");
+	self.zoomedImage.removeAttribute("src");
+	self.zoomedImage.removeAttribute("height");
+	self.zoomedImage.removeAttribute("width");
+	self.zoomedImage.removeAttribute("srcset");
+	self.zoomedImage.removeAttribute("sizes");
 	self.zoomedImage.removeAttribute("id");
 	self.zoomedImage.removeAttribute("style");
 
-	if(self.opts.imageUrl != null) self.zoomedImage.setAttribute("src", self.opts.imageUrl);
+	if(self.opts.imageUrl != null)
+		self.zoomedImage.setAttribute("src", self.opts.imageUrl);
+	else
+		self.zoomedImage.setAttribute("src", original.getAttribute("data-fullwidth-src") ? original.getAttribute("data-fullwidth-src") : original.getAttribute("src"));
 	if(self.opts.backgroundImageColor != null) self.zoomedImage.style.background = self.opts.backgroundImageColor;
 
 	if(wrapper == null){
@@ -97,8 +111,8 @@ var ZoomableImage = function(selector, options){
 		inPlace = false;
 	}
 
+	var intervalTestLoaded = null;
 	function initLoaded(){
-		self.zoomedImage.onload = null;
 		clearInterval(intervalTestLoaded);
 
 		var transitionString = "opacity " + self.opts.appearDuration + "s, top 0.1s, left 0.1s";	
@@ -109,11 +123,16 @@ var ZoomableImage = function(selector, options){
 		if(self.recalculatePositions())
 			self.enable();
 	}
-	self.zoomedImage.onload = initLoaded;
-	var intervalTestLoaded = setInterval(function(){
-		if(self.zoomedImage.complete){
-			clearInterval(intervalTestLoaded);
+	setTimeout(function(){
+		if(self.zoomedImage.complete && original.complete && self.zoomedImage.naturalWidth != 0 && self.zoomedImage.naturalHeight != 0){
 			initLoaded();
+		} else {
+			intervalTestLoaded = setInterval(function(){
+				if(self.zoomedImage.complete && original.complete && self.zoomedImage.naturalWidth != 0 && self.zoomedImage.naturalHeight != 0){
+					clearInterval(intervalTestLoaded);
+					initLoaded();
+				}
+			}, 50);
 		}
 	}, 50);
 
@@ -121,14 +140,13 @@ var ZoomableImage = function(selector, options){
 		attach(original,"mousemove", recalcOffsets);
 		attach(original,"mouseenter", setActive);
 		attach(original,"mouseleave", setInactive);
+		return self;
 	}
 	this.disable = function(){
 		detach(original,"mousemove", recalcOffsets);
 		detach(original,"mouseenter", setActive);
 		detach(original,"mouseleave", setInactive);
-	}
-	this.delete = function(){
-		wrapper.remove();
+		return self;
 	}
 	function active(active){active?setActive():setInactive();}
 	function setActive(){wrapper.classList.add("active");}
@@ -191,7 +209,13 @@ var ZoomableImage = function(selector, options){
 		}
 
 		if(proportions.x < 1 || proportions.y < 1){
-			console.log("Zoom on stretched image", self.zoomedImage);
+			console.warn("Zoom on stretched image", self.zoomedImage, {
+				original: dims,
+				natural: {
+					x: self.zoomedImage.naturalWidth,
+					y: self.zoomedImage.naturalHeight
+				}
+			});
 			self.disable();
 			return false;
 		}
@@ -235,5 +259,8 @@ var ZoomableImage = function(selector, options){
 			wrapper.classList.remove("active") && setTimeout(function(){wrapper.parentNode.removeChild(wrapper);}, self.opts.appearDuration * 100);
 		else
 			wrapper.parentNode.removeChild(wrapper);
+
+		return undefined;
 	}
+	return self;
 }
