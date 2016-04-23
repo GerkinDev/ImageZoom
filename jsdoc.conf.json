@@ -1,0 +1,22 @@
+{
+	"tags": {
+		"allowUnknownTags": true,
+		"dictionaries": ["jsdoc","closure"]
+	},
+	"source": {
+		"include": ["."],
+		"includePattern": "lib\\/src\\/.+(?!\\.min).js$"
+	},
+	"plugins": ["plugins/summarize.js","plugins/underscore.js","plugins/gerkinutils.js"],
+	"templates": {
+		"cleverLinks": false,
+		"monospaceLinks": false
+	},
+	"opts":{
+		"template": "templates/default",
+		"encoding": "utf8",
+		"destination": "./docs/",
+		"recurse": true,
+		"private": true
+	}
+}

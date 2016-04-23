@@ -1,6 +1,34 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: image_zoom.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: image_zoom.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * @file Class file for {@link ImageZoom}
- * @author Alexandre Germain <agermain@gerkindevelopment.net>
+ * @author Alexandre Germain &lt;agermain@gerkindevelopment.net>
  * @version 0.1.0
  */
 
@@ -25,7 +53,7 @@ var ImageZoom;
 		var self = this;
 
 		var original;
-		if(jQuery && (selector instanceof jQuery)){
+		if(jQuery &amp;&amp; (selector instanceof jQuery)){
 			original = selector[0];
 		} else if(typeof selector === "string" || selector instanceof String){
 			original = document.querySelector(selector);
@@ -55,8 +83,8 @@ var ImageZoom;
 			backgroundImageColor: null,
 			forceNaturalProportions: true
 		}, options);
-		if(self.opts.target && typeof self.opts.target == "object"){
-			if(jQuery && (self.opts.target instanceof jQuery)){
+		if(self.opts.target &amp;&amp; typeof self.opts.target == "object"){
+			if(jQuery &amp;&amp; (self.opts.target instanceof jQuery)){
 				self.opts.target = self.opts.target[0];
 			} else if(!isElement(self.opts.target)){
 				var topt = self.opts.target;
@@ -66,7 +94,7 @@ var ImageZoom;
 				if(!topt.height){
 					topt.height = original.height;
 				}
-				if((!topt.width) || (!topt.height) || ((!topt.left) && (!topt.right) && (!topt.top) && (!topt.bottom))){
+				if((!topt.width) || (!topt.height) || ((!topt.left) &amp;&amp; (!topt.right) &amp;&amp; (!topt.top) &amp;&amp; (!topt.bottom))){
 					console.warn("Missing position attributes for Zoomable Image target: ", topt);
 					self.opts.target = null;
 				} else {
@@ -113,11 +141,11 @@ var ImageZoom;
 		 * @snippetStart waitLoaded
 		 */
 		setTimeout(function(){
-			if(self.zoomedImage.complete && original.complete && self.zoomedImage.naturalWidth != 0 && self.zoomedImage.naturalHeight != 0){
+			if(self.zoomedImage.complete &amp;&amp; original.complete &amp;&amp; self.zoomedImage.naturalWidth != 0 &amp;&amp; self.zoomedImage.naturalHeight != 0){
 				initLoaded();
 			} else {
 				intervalTestLoaded = setInterval(function(){
-					if(self.zoomedImage.complete && original.complete && self.zoomedImage.naturalWidth != 0 && self.zoomedImage.naturalHeight != 0){
+					if(self.zoomedImage.complete &amp;&amp; original.complete &amp;&amp; self.zoomedImage.naturalWidth != 0 &amp;&amp; self.zoomedImage.naturalHeight != 0){
 						clearInterval(intervalTestLoaded);
 						initLoaded();
 					}
@@ -198,11 +226,11 @@ var ImageZoom;
 			setActive();
 			var axisNames = ["x", "y"];
 			var offsets = {};
-			for(var i = 0; i < 2; i++){
+			for(var i = 0; i &lt; 2; i++){
 				var axis = axisNames[i];
 				var offsetName = "offset" + axis.toUpperCase();
 				var percentScroll;
-				if(e[offsetName] < self.opts.deadarea * baseDims[axis]){
+				if(e[offsetName] &lt; self.opts.deadarea * baseDims[axis]){
 					percentScroll = 0;
 				} else if(e[offsetName] > (1 - self.opts.deadarea) * baseDims[axis]){
 					percentScroll = 100;
@@ -296,7 +324,7 @@ var ImageZoom;
 				y: self.zoomedImage.naturalHeight / dims.y
 			}
 
-			if(proportions.x < 1 || proportions.y < 1){
+			if(proportions.x &lt; 1 || proportions.y &lt; 1){
 				console.warn("Zoom on stretched image", self.zoomedImage, {
 					original: dims,
 					natural: {
@@ -345,7 +373,7 @@ var ImageZoom;
 		 * @function delete
 		 * @memberof ImageZoom
 		 * @description [[Description]]
-		 * @returns {undefined} Undefined to call&assign with delete
+		 * @returns {undefined} Undefined to call&amp;assign with delete
 		 * @public
 		 * @instance
 		 * @since 0.1.0
@@ -354,7 +382,7 @@ var ImageZoom;
 			self.disable();
 			self.zoomedImage.parentNode.removeChild(self.zoomedImage);
 			if(wrapper.classList.contains("active"))
-				wrapper.classList.remove("active") && setTimeout(function(){wrapper.parentNode.removeChild(wrapper);}, self.opts.appearDuration * 100);
+				wrapper.classList.remove("active") &amp;&amp; setTimeout(function(){wrapper.parentNode.removeChild(wrapper);}, self.opts.appearDuration * 100);
 			else
 				wrapper.parentNode.removeChild(wrapper);
 
@@ -389,12 +417,12 @@ var ImageZoom;
 		 * @static
 		 * @since 0.1.0
 		 */
-		function _attach(a,b,c){a&&b&&c&&(a.addEventListener?a.addEventListener(b,c):a.attachEvent(b,c));}
+		function _attach(a,b,c){a&amp;&amp;b&amp;&amp;c&amp;&amp;(a.addEventListener?a.addEventListener(b,c):a.attachEvent(b,c));}
 		if(a==null||typeof a=="undefined"||a.constructor.name!="Array")a=[a];
 		if(b==null||typeof b=="undefined"||b.constructor.name!="Array")b=[b];
 		if(c==null||typeof c=="undefined"||c.constructor.name!="Array")c=[c];
 		var i=0,j=0,k=0,I=a.length,J=b.length,K=c.length;
-		for(i=0;i<I;i++){for(j=0;j<J;j++){for(k=0;k<K;k++){
+		for(i=0;i&lt;I;i++){for(j=0;j&lt;J;j++){for(k=0;k&lt;K;k++){
 			_attach(a[i],b[j],c[k]);
 		}}}
 	}
@@ -422,12 +450,12 @@ var ImageZoom;
 		 * @static
 		 * @since 0.1.0
 		 */
-		function _detach(a,b,c){a&&b&&c&&(a.addEventListener?a.addEventListener(b,c):a.attachEvent(b,c));}
+		function _detach(a,b,c){a&amp;&amp;b&amp;&amp;c&amp;&amp;(a.addEventListener?a.addEventListener(b,c):a.attachEvent(b,c));}
 		if(a==null||typeof a=="undefined"||a.constructor.name!="Array")a=[a];
 		if(b==null||typeof b=="undefined"||b.constructor.name!="Array")b=[b];
 		if(c==null||typeof c=="undefined"||c.constructor.name!="Array")c=[c];
 		var i=0,j=0,k=0,I=a.length,J=b.length,K=c.length;
-		for(i=0;i<I;i++){for(j=0;j<J;j++){for(k=0;k<K;k++){
+		for(i=0;i&lt;I;i++){for(j=0;j&lt;J;j++){for(k=0;k&lt;K;k++){
 			_detach(a[i],b[j],c[k]);
 		}}}
 	}
@@ -442,7 +470,7 @@ var ImageZoom;
 	 * @static
 	 * @since 0.1.0
 	 */
-	function isElement(o){return(typeof HTMLElement==="object"?o instanceof HTMLElement:o&&typeof o==="object"&&o!==null&&o.nodeType===1&&typeof o.nodeName==="string");}
+	function isElement(o){return(typeof HTMLElement==="object"?o instanceof HTMLElement:o&amp;&amp;typeof o==="object"&amp;&amp;o!==null&amp;&amp;o.nodeType===1&amp;&amp;typeof o.nodeName==="string");}
 
 	/**
 	 * @function mergeRecursive
@@ -471,4 +499,26 @@ var ImageZoom;
 		}
 		return obj1;
 	}
-})();
+})();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="ImageZoom.html">ImageZoom</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 22 2016 16:02:12 GMT-1000 (TAHT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
