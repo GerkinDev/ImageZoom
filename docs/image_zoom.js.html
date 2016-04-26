@@ -58,7 +58,7 @@ var ImageZoom;
 	 * @param   {ImageZoom.mode} [options.mode=variable] Mode for moving zoomed image
 	 * @param   {number} [options.deadarea=0.1] Thickness of the inner border delimitating the moving area. 0 &lt;= x &lt; 0.5
 	 * @param   {number} [options.appearDuration=0.5] Time of the appear/disappear transition. 0 &lt;= x
-	 * @param   {DOMElement|object} [options.target=null] Element to put zoomed image in. If set to null, the zoomed image will appear of top of original image.
+	 * @param   {DOMElement|object} [options.targetContainer=null] Element to put zoomed image in. If set to null, the zoomed image will appear of top of original image.
 	 * @param   {string} [options.imageUrl=null] Explicit URL to the full size image. If not set, it will be retrieved from attribute 'data-fullwidth-src' of image, falling back on 'src'
 	 * @param   {string} [options.backgroundImageColor=null] Explicit CSS value for the background. Transparent if not set.
 	 * @param   {boolean} [options.forceNaturalProportions=true] If set to false, image will keep size deformation. If set to true, it will be automatically resized to keep original proportions.
@@ -66,104 +66,107 @@ var ImageZoom;
 	ImageZoom = function(selector, options){
 		var self = this;
 
+		// Getting the image to zoom
 		var original;
 		if(jQuery &amp;&amp; (selector instanceof jQuery)){
 			original = selector[0];
 		} else if(typeof selector === "string" || selector instanceof String){
+			if(!document.querySelector){
+				throw "Your browser does not support querySelector";
+			}
 			original = document.querySelector(selector);
 		} else if(isElement(selector)){
 			original = selector;
 		}
-		var wrapper;
-		var antiSubstractedProportions;
-		var substractedDims;
-		var offsetProportion;
-		var proportion;
-		var dims;
-		var inPlace;
-		var proportionFactor;
-		var scrollOn;
-		var position = null;
-		var baseDims;
-		Object.defineProperties(this, {
-			proportion: {
-				get: function(){return proportion;}
-			}
-		});	
+
+
+		// First pass of setting by defaults
 		self.opts = mergeRecursive({
 			maxZoom: 2,
-			mode: "follow",
 			deadarea: 0.1,
 			appearDuration: 0.5,
-			target: null,
+			targetContainer: null,
 			imageUrl: null,
 			backgroundImageColor: null,
 			forceNaturalProportions: true
 		}, options);
-		if(self.opts.target &amp;&amp; typeof self.opts.target == "object"){
-			if(jQuery &amp;&amp; (self.opts.target instanceof jQuery)){
-				self.opts.target = self.opts.target[0];
-			} else if(!isElement(self.opts.target)){
-				var topt = self.opts.target;
-				if(!topt.width){
+		if(self.opts.targetContainer &amp;&amp; typeof self.opts.targetContainer == "object"){
+			if(jQuery &amp;&amp; (self.opts.targetContainer instanceof jQuery)){ // Target container given as jQuery object. Extract the first
+				self.opts.targetContainer = (self.opts.targetContainer.length > 0 ? self.opts.targetContainer[0] : null);
+			} else if(isElement(self.opts.targetContainer)){ // Target container directly given as DOMElement
+				// No transform needed
+			} else if(self.opts.targetContainer.constructor.name == "Object"){ // Target container defined by rect
+				// topt => Target options
+				var topt = self.opts.targetContainer;
+				if(typeof topt.width != "number" || topt.width &lt;= 0){
 					topt.width = original.width;
 				}
-				if(!topt.height){
+				if(typeof topt.height != "number" || topt.height &lt;= 0){
 					topt.height = original.height;
 				}
+				console.log(topt);
 				if((!topt.width) || (!topt.height) || ((!topt.left) &amp;&amp; (!topt.right) &amp;&amp; (!topt.top) &amp;&amp; (!topt.bottom))){
-					console.warn("Missing position attributes for Zoomable Image target: ", topt);
-					self.opts.target = null;
+					console.warn("Missing position attributes for Zoomable Image targetContainer: ", topt);
+					self.opts.targetContainer = null;
 				} else {
 					position = topt;
-					self.opts.target = document.createElement("div");
-					self.opts.target.classList.add("zoomable");
-					original.parentNode.appendChild(self.opts.target);
+					self.opts.targetContainer = document.createElement("div");
+					self.opts.targetContainer.classList.add("zoomable");
+					original.parentNode.appendChild(self.opts.targetContainer);
 					// inPlace set when test wrapper
 				}
 			}
 		}
 
-		wrapper = self.opts.target;
-		/* Clone and clean image */
-		self.zoomedImage = original.cloneNode(true);
-		self.zoomedImage.classList.add("zoomed");
-		self.zoomedImage.removeAttribute("src");
-		self.zoomedImage.removeAttribute("height");
-		self.zoomedImage.removeAttribute("width");
-		self.zoomedImage.removeAttribute("srcset");
-		self.zoomedImage.removeAttribute("sizes");
-		self.zoomedImage.removeAttribute("id");
-		self.zoomedImage.removeAttribute("style");
+		// Defaults depending on targetContainer 
+		console.log(self.opts);
+		self.opts = mergeRecursive({
+			mode: self.opts.targetContainer ? ImageZoom.mode.HOVER : ImageZoom.mode.DRAG
+		}, self.opts);
 
-		if(self.opts.imageUrl != null)
-			self.zoomedImage.setAttribute("src", self.opts.imageUrl);
-		else
-			self.zoomedImage.setAttribute("src", original.getAttribute("data-fullwidth-src") ? original.getAttribute("data-fullwidth-src") : original.getAttribute("src"));
-		if(self.opts.backgroundImageColor != null) self.zoomedImage.style.background = self.opts.backgroundImageColor;
-
+		// Generate wrapper
+		var wrapper = self.opts.targetContainer,
+			inPlace;
 		if(wrapper == null){
 			wrapper = document.createElement("div");
-			wrapper.classList.add("zoomable");
 			wrapper.classList.add("zoomableInPlace");
-			wrapper.appendChild(self.zoomedImage);
 			original.parentNode.appendChild(wrapper);
 			inPlace = true;
 		} else {
-			wrapper.classList.add("zoomable");
-			wrapper.appendChild(self.zoomedImage);
 			inPlace = false;
 		}
+		wrapper.classList.add("zoomable");
+
+		// Clone and clean image
+		var zoomedImage = original.cloneNode(true);
+		zoomedImage.classList.add("zoomed");
+		["src","height","width","srcset","sizes","id","style"].forEach(function(attr){
+			zoomedImage.removeAttribute(attr);
+		});
+		if(self.opts.imageUrl != null)
+			zoomedImage.setAttribute("src", self.opts.imageUrl);
+		else
+			zoomedImage.setAttribute("src", original.getAttribute("data-fullwidth-src") ? original.getAttribute("data-fullwidth-src") : original.getAttribute("src"));
+		if(self.opts.backgroundImageColor != null)
+			zoomedImage.style.background = self.opts.backgroundImageColor;
+		self.zoomedImage = zoomedImage;
+
+		// Put image in wrapper
+		wrapper.appendChild(zoomedImage);
+
+		console.log(inPlace, self.opts.mode);
+
+		var proportions;
 
 		/**
 		 * @snippetStart waitLoaded
 		 */
 		setTimeout(function(){
-			if(self.zoomedImage.complete &amp;&amp; original.complete &amp;&amp; self.zoomedImage.naturalWidth != 0 &amp;&amp; self.zoomedImage.naturalHeight != 0){
+			if(zoomedImage.complete &amp;&amp; original.complete &amp;&amp; zoomedImage.naturalWidth != 0 &amp;&amp; zoomedImage.naturalHeight != 0){
 				initLoaded();
 			} else {
 				intervalTestLoaded = setInterval(function(){
-					if(self.zoomedImage.complete &amp;&amp; original.complete &amp;&amp; self.zoomedImage.naturalWidth != 0 &amp;&amp; self.zoomedImage.naturalHeight != 0){
+					if(zoomedImage.complete &amp;&amp; original.complete &amp;&amp; zoomedImage.naturalWidth != 0 &amp;&amp; zoomedImage.naturalHeight != 0){
 						clearInterval(intervalTestLoaded);
 						initLoaded();
 					}
@@ -186,18 +189,32 @@ var ImageZoom;
 		 * @private
 		 * @instance
 		 * @since 0.1.0
-		 * @snippet helloWorld
 		 */
 		function initLoaded(){
 			clearInterval(intervalTestLoaded);
 
 			var transitionString = "opacity " + self.opts.appearDuration + "s";	
-			self.zoomedImage.style.webkitTransition = transitionString;
-			self.zoomedImage.style.mozTransition = transitionString;
-			self.zoomedImage.style.transition = transitionString;
-			attach(window,"resize",self.recalculatePositions);
-			if(self.recalculatePositions())
+			zoomedImage.style.webkitTransition = transitionString;
+			zoomedImage.style.mozTransition = transitionString;
+			zoomedImage.style.transition = transitionString;
+			attach(window,"resize",checkZoomable);
+			checkZoomable();
+		}
+
+		/**
+		 * @function checkZoomable
+		 * @memberof ImageZoom
+		 * @summary Check if we need to zoom
+		 * @description Check if it is useful to enable the ImageZoom, IE if zoomed image will be bigger than source.
+		 * @private
+		 * @instance
+		 * @since 0.2.0
+		 */
+		function checkZoomable(){
+			var zoomable = self.recalculatePositions();
+			if(zoomable){
 				self.enable();
+			}
 		}
 
 		/**
@@ -245,24 +262,6 @@ var ImageZoom;
 		 * @since 0.1.0
 		 */
 		function recalcOffsets(e){
-			setActive();
-			var axisNames = ["x", "y"];
-			var offsets = {};
-			for(var i = 0; i &lt; 2; i++){
-				var axis = axisNames[i];
-				var offsetName = "offset" + axis.toUpperCase();
-				var percentScroll;
-				if(e[offsetName] &lt; self.opts.deadarea * baseDims[axis]){
-					percentScroll = 0;
-				} else if(e[offsetName] > (1 - self.opts.deadarea) * baseDims[axis]){
-					percentScroll = 100;
-				} else {
-					percentScroll = ((e[offsetName] - substractedDims[axis]) / scrollOn[axis]) * 100;
-				}
-				offsets[axis] = (percentScroll * proportionFactor[axis]) / 100;
-			}
-			self.zoomedImage.style.top	= -offsets.y + "px";
-			self.zoomedImage.style.left	= -offsets.x + "px";
 		}
 
 
@@ -272,8 +271,8 @@ var ImageZoom;
 		/**
 		 * @function enable
 		 * @memberof ImageZoom
-		 * @summary Enables the ImageZoom instance
-		 * @description Binds all required events to behave normally
+		 * @summary Set ImageZoom active. It will catch all required events.
+		 * @description Bind all events to the object, allowing ImageZoom to behave like it is intended to behave.
 		 * @returns {this} This object for chained calls
 		 * @public
 		 * @instance
@@ -289,8 +288,8 @@ var ImageZoom;
 		/**
 		 * @function disable
 		 * @memberof ImageZoom
-		 * @summary Disables the ImageZoom instance
-		 * @description Unbind all events. ImageZoom won't take any calculation time until {@link ImageZoom.enable enabled} again.
+		 * @summary Set ImageZoom inactive. It won't catch any events.
+		 * @description uUnbind all events to the object, setting ImageZoom in a "sleep" status.
 		 * @returns {this} This object for chained calls
 		 * @public
 		 * @instance
@@ -301,6 +300,10 @@ var ImageZoom;
 			detach(original,"mouseenter", setActive);
 			detach(original,"mouseleave", setInactive);
 			return self;
+		}
+
+		this.refreshZoomedPosition = function(){
+
 		}
 
 		/**
@@ -314,83 +317,40 @@ var ImageZoom;
 		 * @since 0.1.0
 		 */
 		this.recalculatePositions = function(){
-			setInactive();
-			if(position != null){
-				var opts = {
-					height: position.height		+ "px",
-					width: position.width		+ "px",
-					top: original.offsetTop		+ "px",
-					left: original.offsetLeft	+ "px",
-					position: "absolute"
-				};
-				if(!!position.top)		opts.top	= (original.offsetTop	- (position.height			+ position.top		)) + "px";
-				if(!!position.bottom)	opts.top	= (original.offsetTop	+ (original.clientHeight	+ position.bottom	)) + "px";
-				if(!!position.left)		opts.left	= (original.offsetLeft	- (position.width			+ position.left		)) + "px";
-				if(!!position.right)	opts.left	= (original.offsetLeft	+ (original.clientWidth		+ position.right	)) + "px";
-				for(var k in opts)
-					self.opts.target.style[k] = opts[k];
+			var dims = {
+				wrapper: {
+					width: wrapper.clientWidth,
+					height: wrapper.clientHeight
+				},
+				image: {
+					width: original.clientWidth,
+					height: original.clientHeight
+				},
+				natural: {
+					width: original.naturalWidth,
+					height: original.naturalHeight
+				}
 			}
-			dims = {
-				x: original.clientWidth,
-				y: original.clientHeight
-			};
-			scrollOn = {
-				x: dims.x * (1 - (2 * self.opts.deadarea)),
-				y: dims.y * (1 - (2 * self.opts.deadarea))
-			};
-			if(inPlace){
-				wrapper.style.top		= original.offsetTop + "px";
-				wrapper.style.left		= original.offsetLeft + "px";
-				wrapper.style.width 	= dims.x + "px";
-				wrapper.style.height	= dims.y + "px";
+			console.log(wrapper,original, JSON.stringify(dims));
+			proportions = {
+				width: dims.image.width / dims.natural.width,
+				height: dims.image.height / dims.natural.height,
 			}
-			var proportions = {
-				x: self.zoomedImage.naturalWidth / dims.x,
-				y: self.zoomedImage.naturalHeight / dims.y
-			}
-
-			if(proportions.x &lt; 1 || proportions.y &lt; 1){
-				console.warn("Zoom on stretched image", self.zoomedImage, {
-					original: dims,
-					natural: {
-						x: self.zoomedImage.naturalWidth,
-						y: self.zoomedImage.naturalHeight
-					}
-				});
-				self.disable();
+			if(
+				(proportions.width >= 1 || proportions.height >= 1) // If original is already stretched
+			){
+				console.log("Invalid sized image: already stretched");
 				return false;
 			}
-
-			var minProportions = Math.min(proportions.x, proportions.y);
-			proportion = Math.min(
-				minProportions,
-				self.opts.maxZoom
-			);
-			offsetProportion = (proportion - 1);
-
-			if(self.opts.forceNaturalProportions){
-				baseDims = {
-					x: (self.zoomedImage.naturalWidth / minProportions),
-					y: (self.zoomedImage.naturalHeight / minProportions)
-				}
-			} else {
-				baseDims = {
-					x: dims.x,
-					y: dims.y
-				}
+			
+			console.log(inPlace);
+			if(inPlace){ // Copy size if container overlays the original image
+				wrapper.style.top		= original.offsetTop + "px";
+				wrapper.style.left		= original.offsetLeft + "px";
+				wrapper.style.width = dims.image.width + "px";
+				wrapper.style.height = dims.image.height + "px";
 			}
-
-			self.zoomedImage.style.width	= (baseDims.x * proportion) + "px";
-			self.zoomedImage.style.height	= (baseDims.y * proportion) + "px";
-			proportionFactor = {
-				x: baseDims.x * proportion - wrapper.clientWidth,
-				y: baseDims.y * proportion - wrapper.clientHeight,
-			};
-			substractedDims = {
-				x: self.opts.deadarea * baseDims.x,
-				y: self.opts.deadarea * baseDims.y
-			};
-			antiSubstractedProportions = offsetProportion / (1 - (self.opts.deadarea * 2));
+			
 			return true;
 		}
 
@@ -406,7 +366,7 @@ var ImageZoom;
 		 */
 		this.delete = function(){
 			self.disable();
-			self.zoomedImage.parentNode.removeChild(self.zoomedImage);
+			zoomedImage.parentNode.removeChild(zoomedImage);
 			if(wrapper.classList.contains("active"))
 				wrapper.classList.remove("active") &amp;&amp; setTimeout(function(){wrapper.parentNode.removeChild(wrapper);}, self.opts.appearDuration * 100);
 			else
@@ -434,7 +394,7 @@ var ImageZoom;
 	ImageZoom.batchCreate = function(selector, options){
 
 	}
-	
+
 	/**
 	 * @readonly
 	 * @enum {number}
@@ -442,7 +402,7 @@ var ImageZoom;
 	 */
 	ImageZoom.mode = {
 		/** Zoomed image will tend to follow the pointer. Default for not in place zoomed image, with a thumbnail as map */
-		POINT: 0,
+		HOVER: 0,
 		/** Zoomed image will go in the opposite direction of the cursor, like if it was dragged. Default for in-place */
 		DRAG: 1
 	}
@@ -506,7 +466,7 @@ var ImageZoom;
 		 * @static
 		 * @since 0.1.0
 		 */
-		function _detach(a,b,c){a&amp;&amp;b&amp;&amp;c&amp;&amp;(a.addEventListener?a.addEventListener(b,c):a.attachEvent(b,c));}
+		function _detach(a,b,c){a&amp;&amp;b&amp;&amp;c&amp;&amp;(a.removeEventListener?a.removeEventListener(b,c):a.detachEvent(b,c));}
 		if(a==null||typeof a=="undefined"||a.constructor.name!="Array")a=[a];
 		if(b==null||typeof b=="undefined"||b.constructor.name!="Array")b=[b];
 		if(c==null||typeof c=="undefined"||c.constructor.name!="Array")c=[c];
@@ -555,7 +515,8 @@ var ImageZoom;
 		}
 		return obj1;
 	}
-})();</code></pre>
+})();
+</code></pre>
         </article>
     </section>
 
@@ -571,7 +532,7 @@ var ImageZoom;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Apr 25 2016 13:52:48 GMT-1000 (TAHT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Apr 25 2016 17:18:53 GMT-1000 (TAHT)
 </footer>
 
 <script> prettyPrint(); </script>

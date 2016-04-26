@@ -4,16 +4,16 @@ $(document).ready(function(){
 		container1: new ImageZoom("#container1 > img", {maxZoom: 2}),
 		container2: new ImageZoom("#container2 > img", {
 			maxZoom: 2,
-			target: $("#container2 .zoomArea"),
+			targetContainer: $("#container2 .zoomArea"),
 			deadarea: 0.25
 		}),
 		container4: new ImageZoom("#container4 > img"),
-		container5: new ImageZoom("#container5 > img", {forceNaturalProportions: false})
+		container5: new ImageZoom("#container5 > img", {forceNaturalProportions: false, mode: ImageZoom.mode.HOVER})
 	};
 	c3.load(function(){
 		zoomables.container3 = new ImageZoom("#container3 > img", {
 			maxZoom: 8,
-			target: {
+			targetContainer: {
 				width: c3.width(),
 				height: c3.height(),
 				left: 10,
@@ -21,10 +21,8 @@ $(document).ready(function(){
 				top: null,
 				bottom: null
 			},
-			deadarea: 0.25
+			deadarea: 0.25,
+			mode: ImageZoom.mode.DRAG
 		});
 	});
-	
-	console.log(testclass);
-	console.log(new testclass());
 });
