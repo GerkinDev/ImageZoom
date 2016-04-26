@@ -15,7 +15,7 @@ exports.handlers = {
 			if(doclet.description && doclet.description.indexOf("{@snippet ") > -1){
 				doclet.description = doclet.description.replace(/{@snippet\s+(\w+?)(?:\s+(.*?))?}/g, function(matched, snippetCode, label){
 					if(snippets[snippetCode]){
-						return "<pre>"+snippets[snippetCode].content.replace(new RegExp(doclet.name,"g"), '<span style="color: red">'+doclet.name+'</span>')+"</pre>";
+						return '<pre style="line-height: 1.25em;font-size: 0.9em;margin-top: 5px;border-left: 2px solid #eee;padding-left: 15px;margin-left: 10px;"">'+snippets[snippetCode].content.replace(new RegExp(doclet.name,"g"), '<span style="color: red">'+doclet.name+'</span>')+"</pre>";
 					} else {
 						logger.error('Reference to inexistant snippet "'+snippetCode+'"');
 						return "";
