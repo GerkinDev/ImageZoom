@@ -3,7 +3,7 @@ $(document).ready(function(){
 	zoomables = {
 		container1: new ImageZoom("#container1 > img", {maxZoom: 2}),
 		container2: new ImageZoom("#container2 > img", {
-			maxZoom: 2,
+			zoom: 2,
 			targetContainer: $("#container2 .zoomArea"),
 			deadarea: 0.25
 		}),
